@@ -182,10 +182,6 @@ class Blackjack:
             self.active_player = player
             self.draw_card()
 
-            # Was there a Blackjack for this player?
-            if self.blackjack(self.players[player]):
-                print 'BLACKJACK!'
-
         self.draw_card('dealer')
 
         self.active_player = 0
