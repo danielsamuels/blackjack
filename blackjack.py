@@ -154,7 +154,6 @@ class Blackjack:
                     type=click.IntRange(100, None, clamp=True)
                 )
 
-
             self.bets.append(
                 click.prompt(
                     'Player {}, you have a balance of {}. How much would you like to bet?'.format(
@@ -162,7 +161,7 @@ class Blackjack:
                         self.player_balance[player]
                     ),
                     default=int(self.player_balance[player] / 5 * 5 * 0.1),  # Default to 10% of their balance.
-                    type=click.IntRange(5, None, clamp=True)
+                    type=click.IntRange(5, self.player_balance[player], clamp=True)
                 )
             )
 
