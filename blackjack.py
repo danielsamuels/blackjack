@@ -38,7 +38,7 @@ class Blackjack:
         shuffle(self.generated_deck)
 
         for player in range(self.num_players):
-            self.player_balance.append(100)
+            self.player_balance.append(1000)
 
     def sum_cards(self, cards, dealer=False):
         total = 0
@@ -146,19 +146,27 @@ class Blackjack:
             self.active_player = player
 
             if self.player_balance[player] < 5:
-                print "Player {}, you don't have enough money to bet. Here's 1 on the house."
-                self.bets.append(1)
-            else:
-                self.bets.append(
-                    click.prompt(
-                        'Player {}, you have a balance of {}. How much would you like to bet?'.format(
-                            player,
-                            self.player_balance[player]
-                        ),
-                        default=int((self.player_balance[player] * 0.1) / 5 * 5),  # Default to 10% of their balance.
-                        type=click.IntRange(5, None, clamp=True)
-                    )
+                print "Player {}, you don't have enough money to bet. Please deposit more money.".format(player)
+
+                self.player_balance[self.active_player] += click.prompt(
+                    'How much would you like to deposit?',
+                    default=1000,
+                    type=click.IntRange(100, None, clamp=True)
                 )
+
+
+            self.bets.append(
+                click.prompt(
+                    'Player {}, you have a balance of {}. How much would you like to bet?'.format(
+                        player,
+                        self.player_balance[player]
+                    ),
+                    default=int(self.player_balance[player] / 5 * 5 * 0.1),  # Default to 10% of their balance.
+                    type=click.IntRange(5, None, clamp=True)
+                )
+            )
+
+            self.player_balance[player] -= self.bets[player]
 
         # Deal out a card to each player and the dealer.
         for player in range(self.num_players):
