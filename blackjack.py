@@ -171,9 +171,20 @@ class Blackjack:
                 elif max(self.sum_cards(self.players[self.active_player])) > 21:
                     action = 's'
                 else:
-                    action = click.prompt("Player {}, what would you like to to?".format(
-                        self.active_player
-                    ), default='h')
+                    action = None
+
+                    while not action:
+                        action = click.prompt("Player {}, what would you like to to?".format(
+                            self.active_player
+                        ), default='h')
+
+                        if action == 'h' and max(self.sum_cards(self.players[self.active_player])) >= 17:
+                            if not click.confirm('Player {}, you have {}, are you sure you want to hit?'.format(
+                                self.active_player,
+                                max(self.sum_cards(self.players[self.active_player]))
+                            )):
+                                action = None
+
 
                 if action == 'h':  # Hit
                     # Player hits.
