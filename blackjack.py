@@ -249,16 +249,20 @@ class Blackjack:
                 print '[Player {}] Dealer has blackjack. Dealer wins.'.format(player)
             elif self.blackjack(self.players[player]) and not self.blackjack(self.dealer):
                 print '[Player {}] Player has blackjack. Player wins.'.format(player)
+                self.player_balance[player] += self.bets[player] * 2.5
             elif player_score > 21:
                 print '[Player {}] Player went bust. Dealer wins.'.format(player)
             elif dealer_score > 21:
                 print '[Player {}] Dealer went bust. Player wins.'.format(player)
+                self.player_balance[player] += self.bets[player] * 2
             elif player_score > dealer_score:
                 print '[Player {}] Player has a higher score. Player wins.'.format(player)
+                self.player_balance[player] += self.bets[player] * 2
             elif dealer_score > player_score:
                 print '[Player {}] Dealer has a higher score. Dealer wins.'.format(player)
             elif dealer_score == player_score:
                 print '[Player {}] Push.'.format(player)
+                self.player_balance[player] += self.bets[player]
 
         print
 
