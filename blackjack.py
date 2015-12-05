@@ -25,8 +25,17 @@ class Blackjack:
         for key in kwargs:
             setattr(self, key, kwargs[key])
 
-    def sum_cards(self, cards):
+    def sum_cards(self, cards, dealer=False):
         total = 0
+
+        if dealer and len(cards) == 2:
+            card = cards[0][1]
+
+            if card in ['J', 'Q', 'K']:
+                return [10]
+            elif card == 'A':
+                return [1, 11]
+            return card
 
         # First deal with any non-Ace cards.
         aces = [card for card in cards if card[1] == 'A']
@@ -57,20 +66,16 @@ class Blackjack:
             return [non_aces + len(aces)]
 
         # We can have one 11 and the rest as 1.
-        return [non_aces + 11 + len(aces) - 1]
+        return [len(aces), non_aces + 11 + len(aces) - 1]
 
 
     def draw_card(self, hand):
         drawn_card = self.generated_deck.pop(0)
         hand.append(drawn_card)
-
-        print u'DRAWN: {} of {} {}'.format(
-            drawn_card[1],
-            drawn_card[0],
-            repr(self.sum_cards(hand))
-        )
-
         return hand
+
+    def blackjack(self, hand):
+        return len(hand) == 2 and max(self.sum_cards(hand)) == 21
 
 
     def run_dealer_turn(self, cards):
@@ -81,18 +86,21 @@ class Blackjack:
             # Draw card.
             cards = self.draw_card(cards)
 
-        elif len(hand_value) == 2:
-            if hand_value[1] < 17:
+        elif len(hand_value) > 1:
+            if hand_value[1] <= 17:
                 # Draw card.
                 cards = self.draw_card(cards)
 
         hand_value = self.sum_cards(cards)
 
+        # Do we need to draw another card?
         if len(hand_value) == 1 and hand_value[0] < 17:
             hand_value = self.run_dealer_turn(cards)
         elif len(hand_value) > 1:
-            if hand_value[1] >= 17:
+            if hand_value[1] > 17:
                 return [hand_value[1]]
+            else:
+                hand_value = self.run_dealer_turn(cards)
 
         return hand_value
 
@@ -114,64 +122,58 @@ class Blackjack:
         dealer_cards = []
 
         for player in range(self.players):
-            player_cards[player] = [
-                self.generated_deck.pop(0)
-            ]
+            player_cards[player] = []
+            player_cards[player] = self.draw_card(player_cards[player])
 
-        dealer_cards = [
-            self.generated_deck.pop(0)
-        ]
+        dealer_cards = []
+        dealer_cards = self.draw_card(dealer_cards)
 
         # Deal a second card to the players and the dealer.
         for player in range(self.players):
-            player_cards[player].append(self.generated_deck.pop(0))
-
-            print u'Player {} has {} {}'.format(
-                player,
-                ', '.join(u'{} of {}'.format(card[1], card[0]) for card in player_cards[player]),
-                repr(self.sum_cards(player_cards[player]))
-            )
+            player_cards[player] = self.draw_card(player_cards[player])
 
             # Was there a Blackjack for this player?
-            if 21 in self.sum_cards(player_cards[player]):
+            if self.blackjack(player_cards[player]):
                 print 'BLACKJACK!'
 
-        dealer_cards.append(self.generated_deck.pop(0))
+        dealer_cards = self.draw_card(dealer_cards)
 
-
-        if 21 in self.sum_cards(dealer_cards):
-            print u'Dealer has {} of {} and {} of {} {}'.format(
-                dealer_cards[0][1],
-                dealer_cards[0][0],
-                dealer_cards[1][1],
-                dealer_cards[1][0],
+        if self.blackjack(dealer_cards):
+            print 'DEALER HAND {}'.format(
                 repr(self.sum_cards(dealer_cards))
-            )
-            print 'DEALER BLACKJACK!'
+            ).center(13 + (len(dealer_cards) - 1) * 6)
+
+            self.card_graphics(dealer_cards)
         else:
-            print u'Dealer has {} of {} and ???'.format(
-                dealer_cards[0][1],
-                dealer_cards[0][0],
-            )
+            print 'DEALER HAND {}'.format(
+                repr(self.sum_cards(dealer_cards, dealer=True))
+            ).center(13 + (len(dealer_cards) - 1) * 6)
+
+            self.card_graphics(dealer_cards, dealer=True)
 
         print
         while 1:
-            action = click.prompt("What would you like to to?", default='h')
+            print 'YOUR HAND {}'.format(repr(self.sum_cards(player_cards[0]))).center(13 + (len(player_cards[0]) - 1) * 6)
+            self.card_graphics(player_cards[0])
 
-            if action == 'h':
+            if self.blackjack(player_cards[0]) or self.blackjack(dealer_cards):
+                action = 's'
+            elif self.sum_cards(player_cards[0]) == 21:
+                action = 's'
+            else:
+                action = click.prompt("What would you like to to?", default='h')
+
+            if action == 'h':  # Hit
                 # Player hits.
                 player_cards[0].append(self.generated_deck.pop(0))
-
-                print u'Player {} has {} {}'.format(
-                    0,
-                    ', '.join(u'{} of {}'.format(card[1], card[0]) for card in player_cards[0]),
-                    repr(self.sum_cards(player_cards[0]))
-                )
 
                 if max(self.sum_cards(player_cards[0])) > 21:
                     print 'BUST!'
                     break
-            elif action == 's':
+            elif action == 'd':  # Double
+                # Double the bet for this user, draw one card, then stand.
+                pass
+            elif action == 's':  # Stand
                 # At this point, we would make sure that all players have either
                 # stood, doubled, gone bust or got blackjack. Play out the dealer.
                 print
@@ -189,9 +191,16 @@ class Blackjack:
                 dealer = max(self.sum_cards(dealer_cards))
 
                 print
-                print 'Player: {}. Dealer: {}.'.format(player, dealer)
+                print 'Player: {}. Dealer: {}.'.format(
+                    player if not self.blackjack(player_cards[0]) else 'BLACKJACK',
+                    dealer if not self.blackjack(dealer_cards) else 'BLACKJACK',
+                )
 
-                if player > 21:
+                if self.blackjack(dealer_cards) and not self.blackjack(player_cards[0]):
+                    print 'Dealer has blackjack.'
+                elif self.blackjack(player_cards[0]) and not self.blackjack(dealer_cards):
+                    print 'Player has blackjack.'
+                elif player > 21:
                     print 'Player went bust. Dealer wins.'
                 elif dealer > 21:
                     print 'Dealer went bust. Player wins.'
@@ -207,6 +216,51 @@ class Blackjack:
 
         click.confirm('Hit Enter to start a new game.', abort=True)
 
+    def card_graphics(self, hand, dealer=False):
+        # +---- +-----------+
+        # | A   | 10        |
+        # | ♠   | ♠         |
+        # |     |           |
+        # |     |           |
+        # |     |           |
+        # |     |         ♠ |
+        # |     |        10 |
+        # +---- +-----------+
+
+        lines = [[], [], [], [], [], [], [], [], []]
+
+        for index, card in enumerate(hand):
+            if index == len(hand) - 1:
+                if dealer and len(hand) == 2:
+                    # Hide this card.
+                    card = ('?', '?')
+
+                # Full card
+                lines[0].append('+-----------+')
+                lines[1].append('| {}        |'.format(str(card[1]).ljust(2)))
+                lines[2].append(u'| {}         |'.format(card[0]))
+                lines[3].append('|           |')
+                lines[4].append('|           |')
+                lines[5].append('|           |')
+                lines[6].append(u'|         {} |'.format(card[0]))
+                lines[7].append('|        {} |'.format(str(card[1]).rjust(2)))
+                lines[8].append('+-----------+')
+            else:
+                # Partial card
+                lines[0].append('+---- ')
+                lines[1].append('| {}  '.format(str(card[1]).ljust(2)))
+                lines[2].append(u'| {}   '.format(card[0]))
+                lines[3].append('|     ')
+                lines[4].append('|     ')
+                lines[5].append('|     ')
+                lines[6].append('|     ')
+                lines[7].append('|     ')
+                lines[8].append('+---- ')
+
+        for line in lines:
+            print ''.join(line)
+
+        print
 
 @click.command()
 @click.option('--decks', default=6, help='Number of decks')
