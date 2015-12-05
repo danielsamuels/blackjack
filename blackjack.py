@@ -209,6 +209,13 @@ class Blackjack:
                             max(self.sum_cards(self.players[self.active_player]))
                         )):
                             action = None
+                    if action == 'd':
+                        # Can this player actually double?
+                        if len(self.players[self.active_player]) != 2:
+                            action = None
+
+                        if len(self.players[self.active_player]) == 2 and max(self.sum_cards(self.players[self.active_player])) not in [9, 10, 11]:
+                            action = None
 
 
             if action == 'h':  # Hit
@@ -216,7 +223,9 @@ class Blackjack:
                 self.draw_card()
             elif action == 'd':  # Double
                 # Double the bet for this user, draw one card, then stand.
-                pass
+                self.bets[self.active_player] *= 2
+                self.draw_card()
+                self.active_player += 1
             elif action == 's':  # Stand
                 self.active_player += 1
 
