@@ -81,7 +81,7 @@ class Blackjack:
             return [non_aces + len(aces)]
 
         # We can have one 11 and the rest as 1.
-        return [len(aces), non_aces + 11 + len(aces) - 1]
+        return [non_aces + len(aces), non_aces + 11 + len(aces) - 1]
 
 
     # Draws a card and adds it to the hand in place.
