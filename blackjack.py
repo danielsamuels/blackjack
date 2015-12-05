@@ -2,6 +2,7 @@
 import click
 import itertools
 from random import shuffle
+import os
 
 VALUES = ['A', 2, 3, 4, 5, 6, 7, 8, 9, 10, 'J', 'Q', 'K']
 SUITS = [u'♠', u'♣', u'♥', u'♦']
@@ -138,27 +139,15 @@ class Blackjack:
 
         dealer_cards = self.draw_card(dealer_cards)
 
-        if self.blackjack(dealer_cards):
-            print 'DEALER HAND {}'.format(
-                repr(self.sum_cards(dealer_cards))
-            ).center(13 + (len(dealer_cards) - 1) * 6)
-
-            self.card_graphics(dealer_cards)
-        else:
-            print 'DEALER HAND {}'.format(
-                repr(self.sum_cards(dealer_cards, dealer=True))
-            ).center(13 + (len(dealer_cards) - 1) * 6)
-
-            self.card_graphics(dealer_cards, dealer=True)
-
-        print
         while 1:
-            print 'YOUR HAND {}'.format(repr(self.sum_cards(player_cards[0]))).center(13 + (len(player_cards[0]) - 1) * 6)
-            self.card_graphics(player_cards[0])
+            print player_cards
+            self.render_graphics(dealer_cards, player_cards)
 
             if self.blackjack(player_cards[0]) or self.blackjack(dealer_cards):
                 action = 's'
             elif self.sum_cards(player_cards[0]) == 21:
+                action = 's'
+            elif max(self.sum_cards(player_cards[0])) > 21:
                 action = 's'
             else:
                 action = click.prompt("What would you like to to?", default='h')
@@ -169,7 +158,6 @@ class Blackjack:
 
                 if max(self.sum_cards(player_cards[0])) > 21:
                     print 'BUST!'
-                    break
             elif action == 'd':  # Double
                 # Double the bet for this user, draw one card, then stand.
                 pass
@@ -186,11 +174,11 @@ class Blackjack:
                 )
 
                 self.run_dealer_turn(dealer_cards)
+                self.render_graphics(dealer_cards, player_cards, show_all=True)
 
                 player = max(self.sum_cards(player_cards[0]))
                 dealer = max(self.sum_cards(dealer_cards))
 
-                print
                 print 'Player: {}. Dealer: {}.'.format(
                     player if not self.blackjack(player_cards[0]) else 'BLACKJACK',
                     dealer if not self.blackjack(dealer_cards) else 'BLACKJACK',
@@ -215,6 +203,33 @@ class Blackjack:
                 break
 
         click.confirm('Hit Enter to start a new game.', abort=True)
+
+    def render_graphics(self, dealer_cards, player_cards, show_all=False):
+        os.system("clear")
+
+        if self.blackjack(dealer_cards):
+            print 'DEALER HAND {}'.format(
+                repr(self.sum_cards(dealer_cards))
+            ).center(13 + (len(dealer_cards) - 1) * 6)
+
+            self.card_graphics(dealer_cards)
+        else:
+            print 'DEALER HAND {}'.format(
+                repr(self.sum_cards(dealer_cards, dealer=True))
+            ).center(13 + (len(dealer_cards) - 1) * 6)
+
+            if show_all:
+                self.card_graphics(dealer_cards)
+            else:
+                self.card_graphics(dealer_cards, dealer=True)
+
+        for player in player_cards:
+            print 'PLAYER {} HAND {}'.format(
+                player,
+                repr(self.sum_cards(player_cards[player]))
+            ).center(13 + (len(player_cards[player]) - 1) * 6)
+
+            self.card_graphics(player_cards[player])
 
     def card_graphics(self, hand, dealer=False):
         # +---- +-----------+
