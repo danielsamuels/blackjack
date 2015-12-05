@@ -173,8 +173,13 @@ class Blackjack:
                     repr(self.sum_cards(dealer_cards))
                 )
 
-                self.run_dealer_turn(dealer_cards)
-                self.render_graphics(dealer_cards, player_cards, show_all=True)
+                # If there's only one player in the game and that player has
+                # gone bust, the dealer only needs to reveal their cards.
+                if len(player_cards) == 1 and max(self.sum_cards(player_cards[0])) > 21:
+                    self.render_graphics(dealer_cards, player_cards, show_all=True)
+                else:
+                    self.run_dealer_turn(dealer_cards)
+                    self.render_graphics(dealer_cards, player_cards, show_all=True)
 
                 player = max(self.sum_cards(player_cards[0]))
                 dealer = max(self.sum_cards(dealer_cards))
@@ -214,13 +219,17 @@ class Blackjack:
 
             self.card_graphics(dealer_cards)
         else:
-            print 'DEALER HAND {}'.format(
-                repr(self.sum_cards(dealer_cards, dealer=True))
-            ).center(13 + (len(dealer_cards) - 1) * 6)
-
             if show_all:
+                print 'DEALER HAND {}'.format(
+                    repr(self.sum_cards(dealer_cards))
+                ).center(13 + (len(dealer_cards) - 1) * 6)
+
                 self.card_graphics(dealer_cards)
             else:
+                print 'DEALER HAND {}'.format(
+                    repr(self.sum_cards(dealer_cards, dealer=True))
+                ).center(13 + (len(dealer_cards) - 1) * 6)
+
                 self.card_graphics(dealer_cards, dealer=True)
 
         for player in player_cards:
