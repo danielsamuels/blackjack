@@ -222,6 +222,7 @@ class Blackjack:
                 self.draw_card()
             elif action == 'd':  # Double
                 # Double the bet for this user, draw one card, then stand.
+                self.player_balance[player] -= self.bets[player]
                 self.bets[self.active_player] *= 2
                 self.draw_card()
                 self.active_player += 1
