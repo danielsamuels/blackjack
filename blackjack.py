@@ -19,10 +19,12 @@ assert len(DECK) == 52
 class Blackjack:
 
     generated_deck = []
-    players = {}
+    players = []
     player_balance = []
     dealer = []
+    player_names = []
     active_player = 0
+    active_hand = 0
 
     def __init__(self, **kwargs):
         for key in kwargs:
@@ -39,12 +41,14 @@ class Blackjack:
 
         for player in range(self.num_players):
             self.player_balance.append(1000)
+            self.player_names.append(click.prompt('Player {}, what is your name?'.format(player)))
+
 
     def sum_cards(self, cards=None, dealer=False):
         total = 0
 
         if not cards:
-            cards = self.players[self.active_player]
+            cards = self.hand()
 
         if dealer and len(cards) == 2:
             card = cards[0][1]
@@ -86,6 +90,16 @@ class Blackjack:
         # We can have one 11 and the rest as 1.
         return [non_aces + len(aces), non_aces + 11 + len(aces) - 1]
 
+    def name(self):
+        return self.player_names[self.active_player]
+
+    def hand(self, *args):
+        from copy import copy
+
+        if args:
+            return copy(self.players[args[0]][args[1]])
+        return copy(self.players[self.active_player][self.active_hand])
+
     def card_value(self, card):
         if card in ['J', 'Q', 'K']:
             return 10
@@ -101,17 +115,22 @@ class Blackjack:
         drawn_card = self.generated_deck.pop(0)
 
         if len(args) == 0:
-            self.players[self.active_player].append(drawn_card)
+            hand = self.hand()
+            hand.append(drawn_card)
+
+            self.players[self.active_player][self.active_hand] = hand
         else:
             if args[0] == 'dealer':
                 self.dealer.append(drawn_card)
             else:
-                self.players[args[0]].append(drawn_card)
+                raise Exception("You have called `draw_card` wrongly somewhere.")
 
         # Put the card at the back of the deck.
         self.generated_deck.append(drawn_card)
 
-    def blackjack(self, hand):
+    def blackjack(self, hand=None):
+        if not hand:
+            return len(self.hand()) == 2 and max(self.sum_cards()) == 21
         return len(hand) == 2 and max(self.sum_cards(hand)) == 21
 
     def run_dealer_turn(self):
@@ -142,7 +161,7 @@ class Blackjack:
 
     def play(self):
         # Reset everything.
-        self.players = {}
+        self.players = []
         self.dealer = []
         self.bets = []
         self.console_width = int(os.popen('stty size', 'r').read().split()[1])
@@ -154,8 +173,17 @@ class Blackjack:
         for player in range(self.num_players):
             self.active_player = player
 
+            player_hands = click.prompt(
+                '{}, how many hands would you like to play?'.format(self.name()),
+                default=1,
+                type=click.IntRange(1, None, clamp=True)
+            )
+
+            self.players.append([[]] * player_hands)
+            self.bets.append([[]] * player_hands)
+
             if self.player_balance[player] < 5:
-                print "Player {}, you don't have enough money to bet. Please deposit more money.".format(player)
+                print "{}, you don't have enough money to bet. Please deposit more money.".format(self.name())
 
                 self.player_balance[self.active_player] += click.prompt(
                     'How much would you like to deposit?',
@@ -163,121 +191,144 @@ class Blackjack:
                     type=click.IntRange(100, None, clamp=True)
                 )
 
-            self.bets.append(
-                click.prompt(
-                    'Player {}, you have a balance of {}. How much would you like to bet?'.format(
-                        player,
-                        self.player_balance[player]
+            for index, hand in enumerate(self.players[player]):
+                self.bets[player][index] = click.prompt(
+                    '{}, you have a balance of {}. How much would you like to bet on hand {}?'.format(
+                        self.name(),
+                        self.player_balance[player],
+                        index
                     ),
                     default=int(self.player_balance[player] / 5 * 5 * 0.1),  # Default to 10% of their balance.
                     type=click.IntRange(5, self.player_balance[player], clamp=True)
                 )
-            )
 
-            self.player_balance[player] -= self.bets[player]
+                self.player_balance[player] -= self.bets[player][index]
 
         # Deal out a card to each player and the dealer.
         for player in range(self.num_players):
             self.active_player = player
 
-            self.players[player] = []
-            self.draw_card()
+            for index, hand in enumerate(self.players[player]):
+                self.active_hand = index
+                self.draw_card()
 
         self.draw_card('dealer')
 
         # Deal a second card to the players and the dealer.
         for player in range(self.num_players):
             self.active_player = player
-            self.draw_card()
+
+            for index, hand in enumerate(self.players[player]):
+                self.active_hand = index
+                self.draw_card()
 
         self.draw_card('dealer')
 
         self.active_player = 0
+        self.active_hand = 0
 
         while self.active_player < len(self.players):
-            self.render_graphics()
+            while self.active_hand < len(self.players[self.active_player]):
+                self.render_graphics()
 
-            if self.blackjack(self.players[self.active_player]) or self.blackjack(self.dealer):
-                action = 's'
-            elif max(self.sum_cards()) == 21:
-                action = 's'
-            elif max(self.sum_cards()) > 21:
-                action = 's'
-            else:
-                action = None
+                if self.blackjack() or self.blackjack(self.dealer):
+                    action = 's'
+                elif max(self.sum_cards()) == 21:
+                    action = 's'
+                elif max(self.sum_cards()) > 21:
+                    action = 's'
+                else:
+                    action = None
 
-                while not action:
-                    print 'Options: [h]it, [s]tand{}{}'.format(
-                        ', [d]ouble' if len(self.players[self.active_player]) == 2 and max(self.sum_cards()) in [9, 10, 11] else '',
-                        ', s[p]lit' if len(self.players[self.active_player]) == 2 and self.card_value(self.players[self.active_player][0][1]) == self.card_value(self.players[self.active_player][1][1]) else ''
-                    )
-                    action = click.prompt("Player {}, what would you like to to?".format(
-                        self.active_player
-                    ), default='h')
+                    while not action:
+                        print 'Options: [h]it, [s]tand{}{}'.format(
+                            ', [d]ouble' if len(self.hand()) == 2 and max(self.sum_cards()) in [9, 10, 11] else '',
+                            ', s[p]lit' if len(self.hand()) == 2 and self.card_value(self.hand()[0][1]) == self.card_value(self.hand()[1][1]) else ''
+                        )
+                        action = click.prompt("{}, what would you like to to?".format(
+                            self.name()
+                        ), default='h')
 
-                    if action == 'h' and max(self.sum_cards()) >= 17:
-                        if not click.confirm('Player {}, you have {}, are you sure you want to hit?'.format(
-                            self.active_player,
-                            max(self.sum_cards())
-                        )):
-                            action = None
-                    if action == 'd':
-                        # Can this player actually double?
-                        if len(self.players[self.active_player]) != 2:
-                            action = None
+                        if action == 'h' and max(self.sum_cards()) >= 17:
+                            if not click.confirm('{}, you have {}, are you sure you want to hit?'.format(
+                                self.name(),
+                                max(self.sum_cards())
+                            )):
+                                action = None
+                        if action == 'd':
+                            # Can this player actually double?
+                            if len(self.hand()) != 2:
+                                action = None
 
-                        if len(self.players[self.active_player]) == 2 and max(self.sum_cards()) not in [9, 10, 11]:
-                            action = None
+                            if len(self.hand()) == 2 and max(self.sum_cards()) not in [9, 10, 11]:
+                                action = None
 
 
-            if action == 'h':  # Hit
-                # Player hits.
-                self.draw_card()
-            elif action == 'd':  # Double
-                # Double the bet for this user, draw one card, then stand.
-                self.player_balance[player] -= self.bets[player]
-                self.bets[self.active_player] *= 2
-                self.draw_card()
-                self.active_player += 1
-            elif action == 's':  # Stand
-                self.active_player += 1
+                if action == 'h':  # Hit
+                    # Player hits.
+                    self.draw_card()
+                elif action == 'd':  # Double
+                    # Double the bet for this user, draw one card, then stand.
+                    self.player_balance[player] -= self.bets[player]
+                    self.bets[self.active_player] *= 2
+                    self.draw_card()
+
+                    if self.active_hand == len(self.players[self.active_player]) - 1:
+                        self.active_hand = 0
+                        self.active_player += 1
+                        break
+                    else:
+                        self.active_hand += 1
+                elif action == 's':  # Stand
+                    if self.active_hand == len(self.players[self.active_player]) - 1:
+                        self.active_hand = 0
+                        self.active_player += 1
+                        break
+                    else:
+                        self.active_hand += 1
 
         # At this point, we would make sure that all players have either
         # stood, doubled, gone bust or got blackjack. Play out the dealer.
 
         # If there's only one player in the game and that player has
         # gone bust, the dealer only needs to reveal their cards.
-        if len(self.players) == 1 and max(self.sum_cards(self.players[0])) > 21:
+        if len(self.players) == 1 and len(self.players[0]) == 1 and max(self.sum_cards(self.players[0][0])) > 21:
             self.render_graphics(show_all=True)
         else:
             self.run_dealer_turn()
             self.render_graphics(show_all=True)
 
         # Work out who has won and who has lost.
+        dealer_score = max(self.sum_cards(self.dealer))
+
         for player in range(self.num_players):
-            player_score = max(self.sum_cards(self.players[player]))
-            dealer_score = max(self.sum_cards(self.dealer))
+            self.active_player = player
 
-            if self.blackjack(self.dealer) and not self.blackjack(self.players[player]):
-                print '[Player {}] Dealer has blackjack. Dealer wins.'.format(player)
-            elif self.blackjack(self.players[player]) and not self.blackjack(self.dealer):
-                print '[Player {}] Player has blackjack. Player wins.'.format(player)
-                self.player_balance[player] += self.bets[player] * 2.5
-            elif player_score > 21:
-                print '[Player {}] Player went bust. Dealer wins.'.format(player)
-            elif dealer_score > 21:
-                print '[Player {}] Dealer went bust. Player wins.'.format(player)
-                self.player_balance[player] += self.bets[player] * 2
-            elif player_score > dealer_score:
-                print '[Player {}] Player has a higher score. Player wins.'.format(player)
-                self.player_balance[player] += self.bets[player] * 2
-            elif dealer_score > player_score:
-                print '[Player {}] Dealer has a higher score. Dealer wins.'.format(player)
-            elif dealer_score == player_score:
-                print '[Player {}] Push.'.format(player)
-                self.player_balance[player] += self.bets[player]
+            for hand, _ in enumerate(self.players[player]):
+                self.active_hand = hand
 
-        print
+                player_score = max(self.sum_cards())
+
+                if self.blackjack(self.dealer) and not self.blackjack():
+                    print '[{}, Hand {}] Dealer has blackjack. Dealer wins.'.format(self.name(), hand)
+                elif self.blackjack() and not self.blackjack(self.dealer):
+                    print '[{}, Hand {}] Player has blackjack. Player wins.'.format(self.name(), hand)
+                    self.player_balance[player] += self.bets[player][hand] * 2.5
+                elif player_score > 21:
+                    print '[{}, Hand {}] Player went bust. Dealer wins.'.format(self.name(), hand)
+                elif dealer_score > 21:
+                    print '[{}, Hand {}] Dealer went bust. Player wins.'.format(self.name(), hand)
+                    self.player_balance[player] += self.bets[player][hand] * 2
+                elif player_score > dealer_score:
+                    print '[{}, Hand {}] Player has a higher score. Player wins.'.format(self.name(), hand)
+                    self.player_balance[player] += self.bets[player][hand] * 2
+                elif dealer_score > player_score:
+                    print '[{}, Hand {}] Dealer has a higher score. Dealer wins.'.format(self.name(), hand)
+                elif dealer_score == player_score:
+                    print '[{}, Hand {}] Push.'.format(self.name(), hand)
+                    self.player_balance[player] += self.bets[player][hand]
+
+            print
 
         if click.confirm('Play again?', default=True, abort=True):
             self.play()
@@ -308,28 +359,33 @@ class Blackjack:
 
                 graphics.extend(self.card_graphics(self.dealer, dealer=True))
 
-        for player in self.players:
-            graphics.append([''])
-            graphics.append(['{}{}'.format(
-                'PLAYER {} HAND {}{}'.format(
-                    player,
-                    repr(self.sum_cards(self.players[player])),
-                    ' - BUST' if max(self.sum_cards(self.players[player])) > 21 else
-                    ' - BLACKJACK' if self.blackjack(self.players[player]) else '',
-                ).center(13 + (len(self.players[player]) - 1) * 6),
-                ' <<<' if self.active_player == player else ''
-            )])
+        for player, hands in enumerate(self.players):
+            for hand, _ in enumerate(hands):
+                current_hand = self.hand(player, hand)
+                sum_cards = self.sum_cards(current_hand)
 
-            graphics.extend(self.card_graphics(self.players[player]))
+                graphics.append([''])
+                graphics.append(['{}{}'.format(
+                    '{} HAND {} - {}{}'.format(
+                        self.player_names[player].upper(),
+                        hand,
+                        repr(self.sum_cards(self.hand(player, hand))),
+                        ' - BUST' if max(sum_cards) > 21 else
+                        ' - BLACKJACK' if self.blackjack(current_hand) else '',
+                    ).center(13 + (len(current_hand) - 1) * 6),
+                    ' <<<' if self.active_player == player and self.active_hand == hand else ''
+                )])
+
+                graphics.extend(self.card_graphics(current_hand))
 
         # We need to add the players current balances and bets at the top right.
         # We'll generate the box and then add it to each line programatically.
 
         bet_box = []
         for player in range(self.num_players):
-            bet_box.append('Player {}:'.format(player))
+            bet_box.append(self.player_names[player])
             bet_box.append('Balance: {}'.format(self.player_balance[player]))
-            bet_box.append('Current bet: {}'.format(self.bets[player]))
+            bet_box.append('Current bet: {}'.format(sum(self.bets[player])))
 
             if player < self.num_players - 1:
                 bet_box.append('')
@@ -358,7 +414,7 @@ class Blackjack:
 
         print
 
-    def card_graphics(self, hand, dealer=False, include_bets=False):
+    def card_graphics(self, hand=None, dealer=False, include_bets=False):
         # +---- +-----------+
         # | A   | 10        |
         # | ♠   | ♠         |
@@ -368,6 +424,9 @@ class Blackjack:
         # |     |         ♠ |
         # |     |        10 |
         # +---- +-----------+
+
+        if not hand:
+            hand = self.hand()
 
         lines = [[], [], [], [], [], [], [], [], []]
 
