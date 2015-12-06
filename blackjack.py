@@ -269,8 +269,8 @@ class Blackjack:
                     self.draw_card()
                 elif action == 'd':  # Double
                     # Double the bet for this user, draw one card, then stand.
-                    self.player_balance[player] -= self.bets[player]
-                    self.bets[self.active_player] *= 2
+                    self.player_balance[self.active_player] -= self.bets[self.active_player][self.active_hand]
+                    self.bets[self.active_player][self.active_hand] *= 2
                     self.draw_card()
 
                     if self.active_hand == len(self.players[self.active_player]) - 1:
@@ -279,6 +279,19 @@ class Blackjack:
                         break
                     else:
                         self.active_hand += 1
+                elif action == 'p':  # Split
+                    # Take the current hand and split it into two.
+                    hand = self.hand()
+                    self.players[self.active_player][self.active_hand] = [hand[0]]
+                    self.draw_card()
+
+                    self.players[self.active_player].insert(self.active_hand + 1, [hand[1]])
+                    self.bets[self.active_player].insert(self.active_hand + 1, self.bets[self.active_player][self.active_hand])
+                    self.player_balance[self.active_player] -= self.bets[self.active_player][self.active_hand]
+
+                    self.active_hand += 1
+                    self.draw_card()
+                    self.active_hand -= 1
                 elif action == 's':  # Stand
                     if self.active_hand == len(self.players[self.active_player]) - 1:
                         self.active_hand = 0
@@ -328,7 +341,7 @@ class Blackjack:
                     print '[{}, Hand {}] Push.'.format(self.name(), hand)
                     self.player_balance[player] += self.bets[player][hand]
 
-            print
+        print
 
         if click.confirm('Play again?', default=True, abort=True):
             self.play()
