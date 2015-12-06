@@ -1,6 +1,8 @@
 # blackjack
 Multi-player, multi-hand, multi-deck command-line blackjack game featuring standard blackjack casino rules.
 
+![](https://i.imgur.com/XLdhxvY.png)
+
 ### Features:
 
 * Dealer hits on 16 and soft-17s, stands on 17.
