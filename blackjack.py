@@ -255,12 +255,18 @@ class Blackjack:
                                 max(self.sum_cards())
                             )):
                                 action = None
-                        if action == 'd':
+                        elif action == 'd':
                             # Can this player actually double?
                             if len(self.hand()) != 2:
                                 action = None
 
-                            if len(self.hand()) == 2 and max(self.sum_cards()) not in [9, 10, 11]:
+                            if max(self.sum_cards()) not in [9, 10, 11]:
+                                action = None
+                        elif action == 'p':
+                            if len(self.hand()) != 2:
+                                action = None
+
+                            if self.card_value(self.hand()[0][1]) != self.card_value(self.hand()[1][1]):
                                 action = None
 
 
