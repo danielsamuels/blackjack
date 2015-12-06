@@ -1,5 +1,12 @@
 # blackjack
-Command-line blackjack game
+Multi-player, multi-hand, multi-deck command-line blackjack game featuring standard blackjack casino rules.
+
+### Features:
+
+* Dealer hits on 16 and soft-17s, stands on 17.
+* Player can double on 9, 10, 11.
+* Player can split infinitely on matching card values.
+* Player can have multiple hands each with a different bet.
 
 ## Installation
 
