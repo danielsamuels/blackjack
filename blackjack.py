@@ -40,8 +40,11 @@ class Blackjack:
         for player in range(self.num_players):
             self.player_balance.append(1000)
 
-    def sum_cards(self, cards, dealer=False):
+    def sum_cards(self, cards=None, dealer=False):
         total = 0
+
+        if not cards:
+            cards = self.players[self.active_player]
 
         if dealer and len(cards) == 2:
             card = cards[0][1]
@@ -190,9 +193,9 @@ class Blackjack:
 
             if self.blackjack(self.players[self.active_player]) or self.blackjack(self.dealer):
                 action = 's'
-            elif max(self.sum_cards(self.players[self.active_player])) == 21:
+            elif max(self.sum_cards()) == 21:
                 action = 's'
-            elif max(self.sum_cards(self.players[self.active_player])) > 21:
+            elif max(self.sum_cards()) > 21:
                 action = 's'
             else:
                 action = None
@@ -202,10 +205,10 @@ class Blackjack:
                         self.active_player
                     ), default='h')
 
-                    if action == 'h' and max(self.sum_cards(self.players[self.active_player])) >= 17:
+                    if action == 'h' and max(self.sum_cards()) >= 17:
                         if not click.confirm('Player {}, you have {}, are you sure you want to hit?'.format(
                             self.active_player,
-                            max(self.sum_cards(self.players[self.active_player]))
+                            max(self.sum_cards())
                         )):
                             action = None
                     if action == 'd':
@@ -213,7 +216,7 @@ class Blackjack:
                         if len(self.players[self.active_player]) != 2:
                             action = None
 
-                        if len(self.players[self.active_player]) == 2 and max(self.sum_cards(self.players[self.active_player])) not in [9, 10, 11]:
+                        if len(self.players[self.active_player]) == 2 and max(self.sum_cards()) not in [9, 10, 11]:
                             action = None
 
 
