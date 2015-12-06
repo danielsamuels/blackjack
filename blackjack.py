@@ -86,6 +86,12 @@ class Blackjack:
         # We can have one 11 and the rest as 1.
         return [non_aces + len(aces), non_aces + 11 + len(aces) - 1]
 
+    def card_value(self, card):
+        if card in ['J', 'Q', 'K']:
+            return 10
+        elif card == 'A':
+            return [1, 11]
+        return card
 
     # Draws a card and adds it to the hand in place.
     def draw_card(self, *args):
@@ -201,6 +207,10 @@ class Blackjack:
                 action = None
 
                 while not action:
+                    print 'Options: [h]it, [s]tand{}{}'.format(
+                        ', [d]ouble' if len(self.players[self.active_player]) == 2 and max(self.sum_cards()) in [9, 10, 11] else '',
+                        ', s[p]lit' if len(self.players[self.active_player]) == 2 and self.card_value(self.players[self.active_player][0][1]) == self.card_value(self.players[self.active_player][1][1]) else ''
+                    )
                     action = click.prompt("Player {}, what would you like to to?".format(
                         self.active_player
                     ), default='h')
