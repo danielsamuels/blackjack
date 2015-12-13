@@ -26,7 +26,16 @@ class Blackjack:
     active_player = 0
     active_hand = 0
 
-    def __init__(self, **kwargs):
+    def __init__(self, decks=6, players=1, **kwargs):
+        """Set up the game.
+
+        Keyword arguments
+        decks -- the number of decks to play with (default 6)
+        players -- the number of players in the game (default 1)
+        """
+        setattr(self, 'num_decks', decks)
+        setattr(self, 'num_players', players)
+
         for key in kwargs:
             setattr(self, 'num_{}'.format(key), kwargs[key])
 
