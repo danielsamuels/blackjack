@@ -1,6 +1,5 @@
 # coding=utf8
 import click
-import itertools
 from random import shuffle
 import os
 
@@ -15,6 +14,7 @@ DECK = [
 assert len(VALUES) == 13
 assert len(SUITS) == 4
 assert len(DECK) == 52
+
 
 class Blackjack:
 
@@ -43,10 +43,7 @@ class Blackjack:
             self.player_balance.append(1000)
             self.player_names.append(click.prompt('Player {}, what is your name?'.format(player)))
 
-
     def sum_cards(self, cards=None, dealer=False):
-        total = 0
-
         if not cards:
             cards = self.hand()
 
@@ -269,7 +266,6 @@ class Blackjack:
                             if self.card_value(self.hand()[0][1]) != self.card_value(self.hand()[1][1]):
                                 action = None
 
-
                 if action == 'h':  # Hit
                     # Player hits.
                     self.draw_card()
@@ -478,6 +474,7 @@ class Blackjack:
                 lines[8].append('+---- ')
 
         return lines
+
 
 @click.command()
 @click.option('--decks', default=6, help='Number of decks', type=click.IntRange(1, 6, clamp=True))
