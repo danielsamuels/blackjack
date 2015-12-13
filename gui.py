@@ -8,6 +8,9 @@ from blackjack import Blackjack
 
 class GUIBlackjack(Blackjack):
 
+    def __init__(self, decks=6, players=1, **kwargs):
+        super(GUIBlackjack, self).__init__(decks, players, interactive=True, **kwargs)
+
     def play(self):
         # Reset everything.
         self.players = []
