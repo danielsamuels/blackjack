@@ -16,7 +16,7 @@ assert len(SUITS) == 4
 assert len(DECK) == 52
 
 
-class Blackjack:
+class Blackjack(object):
 
     generated_deck = []
     players = []
